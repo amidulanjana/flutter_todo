@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_todo/AnimatedFab.dart';
 import 'package:flutter_todo/TaskRow.dart';
+import 'package:flutter_todo/models/List.dart';
 import 'package:flutter_todo/models/initial_task_list.dart';
 
 import './CustomClipper.dart';
@@ -31,6 +33,15 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   double _imageHeight = 256.0;
+  final GlobalKey<AnimatedListState> _listKey = new GlobalKey<AnimatedListState>();
+  ListModel listModel;
+  bool showOnlyCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    listModel = new ListModel(_listKey, tasks);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +53,7 @@ class _MainPageState extends State<MainPage> {
           _buildTopHeader(),
           _buildProfileRow(),
           _buildBottomPart(),
+          _buildFab(),
         ],
       ),
     );
@@ -140,9 +152,16 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildTasksList() {
-    return new Expanded(
-      child: new ListView(
-      children: tasks.map((task) => new TaskRow(task: task)).toList(),
+    return Expanded(
+      child: AnimatedList(
+        initialItemCount: tasks.length,
+        key: _listKey,
+        itemBuilder: (context,index,animation){
+          return TaskRow(
+            task: listModel[index],
+            animation: animation,
+          );
+        },
     ),
     );
   }
@@ -176,5 +195,26 @@ class _MainPageState extends State<MainPage> {
         color: Colors.grey[300],
       ),
     );
+  }
+
+  Widget _buildFab() {
+     return  Positioned(
+      top: _imageHeight - 100.0,
+      right: -40.0,
+      child: AnimatedFab(
+        onClick: _changeFilterState,
+      )
+    );
+  }
+
+  void _changeFilterState() {
+    showOnlyCompleted = !showOnlyCompleted;
+    tasks.where((task) => !task.completed).forEach((task) {
+      if (showOnlyCompleted) {
+        listModel.removeAt(listModel.indexOf(task));
+      } else {
+        listModel.insert(tasks.indexOf(task), task);
+      }
+    });
   }
 }
